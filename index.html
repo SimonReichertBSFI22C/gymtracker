@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GYM Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #121212;
+            color: #ffffff;
+        }
+        #sessionSelect, #exerciseForm {
+            display: none;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        label, select, input, textarea {
+            margin: 10px 0;
+            color: #ffffff;
+        }
+        select, input, textarea {
+            background-color: #1e1e1e;
+            border: 1px solid #555;
+            padding: 10px;
+            color: #ffffff;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #333;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            max-width: 200px;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        textarea {
+            resize: vertical;
+        }
+        #history {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+            background-color: #1e1e1e;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-y: auto;
+            max-height: 200px;
+
+        #etrpop {
+        height: auto;
+        }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>GYM Tracker</h1>
+
+    <!-- Start new session -->
+    <button id="newSessionBtn">Neue Session starten</button>
+
+    <!-- Session Type Selection -->
+    <div id="sessionSelect">
+        <h2>Wähle Session-Typ</h2>
+        <select id="sessionType">
+            <option value="push">Push</option>
+            <option value="pull">Pull</option>
+            <option value="leg">Leg</option>
+        </select>
+        <button id="startSessionBtn">Session Starten</button>
+    </div>
+
+    <!-- Exercise Form -->
+    <div id="exerciseForm">
+        <h2>Übung hinzufügen</h2>
+        <form id="exerciseFormContent">
+            <label for="exercise">Übung:</label>
+            <select id="exercise"></select>
+
+            <label for="weight">Gewicht (kg):</label>
+            <input type="number" id="weight" placeholder="Gewicht" required>
+
+            <label for="reps">Wiederholungen:</label>
+            <input type="number" id="reps" placeholder="Wiederholungen" required>
+
+            <label for="notes">Notizen (optional):</label>
+            <textarea id="notes" rows="4" placeholder="Anmerkungen zur Übung"></textarea>
+
+            <button type="submit">Übung hinzufügen</button>
+        </form>
+        <button id="endSessionBtn">Session Beenden</button>
+    </div>
+
+    <!-- History -->
+    <div id="history">
+        <h2>Übungshistorie</h2>
+        <ul id="historyList"></ul>
+    </div>
+
+    <script>
+        let sessionData = ''; // String to store session data
+        let sessionFile;
+
+        const exercises = {
+            push: ["Bankdrücken", "Schrägbankdrücken KH", "Schulterdrücken KH", "Trizeps Skyllcrusher rechts", "Trizeps Skyllcrusher links", "Schulter heben Schrägbank", "Butterfly", "Trizeps drücken hinter Kopf", "Schulter heben stehen", "Trizeps drücken kabelzug einzeln", "Trizeps drücken stange"],
+            pull: ["Bizeps curls", "Hammer curls", "Latzug", "Row", "frei Bizeps am kabel rechts", "frei Bizeps am kabel links", "Row Kabel rechts", "Row Kabel links", "Row enger Griff", "Überzüge Kabelturm", "Rear delt"],
+            leg: ["Kniebeugen", "Beinpresse", "Ausfallschritte", "Beinbeuger"]
+        };
+
+        // Start a new session
+        document.getElementById('newSessionBtn').addEventListener('click', () => {
+            document.getElementById('sessionSelect').style.display = 'block';
+            document.getElementById('newSessionBtn').style.display = 'none';
+        });
+
+        // Handle session start
+        document.getElementById('startSessionBtn').addEventListener('click', () => {
+            const sessionType = document.getElementById('sessionType').value;
+            const date = new Date().toISOString().split('T')[0];
+            sessionFile = `${sessionType}_${date}.txt`;
+
+            document.getElementById('sessionSelect').style.display = 'none';
+            document.getElementById('exerciseForm').style.display = 'block';
+
+            // Start session with header
+            sessionData += `Session Type: ${sessionType}\nDate: ${date}\n\n`;
+
+            // Populate exercises based on session type
+            const exerciseDropdown = document.getElementById('exercise');
+            exerciseDropdown.innerHTML = ''; // Clear previous options
+            exercises[sessionType].forEach(exercise => {
+                const option = document.createElement('option');
+                option.value = exercise;
+                option.textContent = exercise;
+                exerciseDropdown.appendChild(option);
+            });
+
+            // Clear history
+            document.getElementById('historyList').innerHTML = '';
+        });
+
+        // Handle exercise form submission
+        document.getElementById('exerciseFormContent').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const exercise = document.getElementById('exercise').value;
+            const weight = document.getElementById('weight').value;
+            const reps = document.getElementById('reps').value;
+            const notes = document.getElementById('notes').value || 'Keine Notizen'; // Optional notes field
+
+            const exerciseData = `Exercise: ${exercise}, Weight: ${weight}kg, Reps: ${reps}, Notes: ${notes}\n`;
+
+            // Add exercise to session data
+            sessionData += exerciseData;
+
+            // Display exercise in history
+            const historyList = document.getElementById('historyList');
+            const listItem = document.createElement('li');
+            listItem.textContent = `${exercise}, Gewicht: ${weight}kg, Wiederholungen: ${reps}, Notizen: ${notes}`;
+            historyList.appendChild(listItem);
+
+            // Clear input fields for the next exercise
+            document.getElementById('weight').value = '';
+            document.getElementById('reps').value = '';
+            document.getElementById('notes').value = ''; // Clear notes
+        });
+
+        // End the session and save the file
+        document.getElementById('endSessionBtn').addEventListener('click', () => {
+            alert('Session beendet und gespeichert!');
+
+            // Create a Blob and trigger download
+            const blob = new Blob([sessionData], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = sessionFile;
+            link.click();
+
+            // Reset the session for the next time
+            sessionData = ''; // Clear session data
+            document.getElementById('exerciseForm').style.display = 'none';
+            document.getElementById('newSessionBtn').style.display = 'block';
+        });
+    </script>
+
+</body>
+</html>
