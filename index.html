@@ -58,10 +58,9 @@
             border-radius: 5px;
             overflow-y: auto;
             max-height: 200px;
-
-        #etrpop {
-        height: auto;
         }
+        #etrpop {
+            height: auto;
         }
     </style>
 </head>
@@ -91,10 +90,10 @@
             <select id="exercise"></select>
 
             <label for="weight">Gewicht (kg):</label>
-            <input type="number" id="weight" placeholder="Gewicht" required>
+            <input type="number" step="0.01" id="weight" placeholder="Gewicht" required>
 
             <label for="reps">Wiederholungen:</label>
-            <input type="number" id="reps" placeholder="Wiederholungen" required>
+            <input type="number" step="0.01" id="reps" placeholder="Wiederholungen" required>
 
             <label for="notes">Notizen (optional):</label>
             <textarea id="notes" rows="4" placeholder="Anmerkungen zur Übung"></textarea>
@@ -113,6 +112,7 @@
     <script>
         let sessionData = ''; // String to store session data
         let sessionFile;
+        let exercisesCompleted = {}; // Object to store exercise sets
 
         const exercises = {
             push: ["Bankdrücken", "Schrägbankdrücken KH", "Schulterdrücken KH", "Trizeps Skyllcrusher rechts", "Trizeps Skyllcrusher links", "Schulter heben Schrägbank", "Butterfly", "Trizeps drücken hinter Kopf", "Schulter heben stehen", "Trizeps drücken kabelzug rechts", "Trizeps drücken kabelzug links", "Trizeps drücken stange"],
@@ -150,6 +150,7 @@
 
             // Clear history
             document.getElementById('historyList').innerHTML = '';
+            exercisesCompleted = {}; // Reset completed exercises
         });
 
         // Handle exercise form submission
@@ -158,18 +159,24 @@
             const exercise = document.getElementById('exercise').value;
             const weight = document.getElementById('weight').value;
             const reps = document.getElementById('reps').value;
-            const notes = document.getElementById('notes').value || 'Keine Notizen'; // Optional notes field
+            const notes = document.getElementById('notes').value.trim(); // Optional notes field
 
-            const exerciseData = `Exercise: ${exercise}, Weight: ${weight}kg, Reps: ${reps}, Notes: ${notes}\n`;
+            // Increment set counter for the exercise
+            if (!exercisesCompleted[exercise]) {
+                exercisesCompleted[exercise] = [];
+            }
+            const setNumber = exercisesCompleted[exercise].length + 1;
 
-            // Add exercise to session data
-            sessionData += exerciseData;
+            // Prepare exercise data based on whether notes are present
+            let exerciseData = `Gewicht: ${weight}kg, Wiederholungen: ${reps}`;
+            if (notes) {
+                exerciseData += `, Notizen: ${notes}`;
+            }
 
-            // Display exercise in history
-            const historyList = document.getElementById('historyList');
-            const listItem = document.createElement('li');
-            listItem.textContent = `${exercise}, Gewicht: ${weight}kg, Wiederholungen: ${reps}, Notizen: ${notes}`;
-            historyList.appendChild(listItem);
+            exercisesCompleted[exercise].push(exerciseData);
+
+            // Update the history display, grouped by exercise and sorted by set number
+            updateHistoryList();
 
             // Clear input fields for the next exercise
             document.getElementById('weight').value = '';
@@ -177,12 +184,43 @@
             document.getElementById('notes').value = ''; // Clear notes
         });
 
+        // Update history list
+        function updateHistoryList() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = ''; // Clear current history display
+
+            for (const exercise in exercisesCompleted) {
+                // Create a heading for each exercise
+                const exerciseHeading = document.createElement('li');
+                exerciseHeading.textContent = exercise;
+                exerciseHeading.style.fontWeight = 'bold';
+                historyList.appendChild(exerciseHeading);
+
+                // List each set for this exercise
+                exercisesCompleted[exercise].forEach((setData, index) => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `Satz ${index + 1}: ${setData}`;
+                    historyList.appendChild(listItem);
+                });
+            }
+        }
+
         // End the session and save the file
         document.getElementById('endSessionBtn').addEventListener('click', () => {
             alert('Session beendet und gespeichert!');
 
+            // Prepare session data for file download, grouped by exercises
+            let groupedSessionData = ''; // String to store grouped session data
+            for (const exercise in exercisesCompleted) {
+                groupedSessionData += `${exercise}\n`; // Add exercise name as header
+                exercisesCompleted[exercise].forEach((setData, index) => {
+                    groupedSessionData += `  Satz ${index + 1}: ${setData}\n`; // Add each set
+                });
+                groupedSessionData += '\n'; // Add extra newline between exercises
+            }
+
             // Create a Blob and trigger download
-            const blob = new Blob([sessionData], { type: 'text/plain' });
+            const blob = new Blob([groupedSessionData], { type: 'text/plain' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = sessionFile;
@@ -190,6 +228,7 @@
 
             // Reset the session for the next time
             sessionData = ''; // Clear session data
+            exercisesCompleted = {}; // Reset completed exercises
             document.getElementById('exerciseForm').style.display = 'none';
             document.getElementById('newSessionBtn').style.display = 'block';
         });
