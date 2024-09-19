@@ -90,16 +90,17 @@
             <select id="exercise"></select>
 
             <label for="weight">Gewicht (kg):</label>
-            <input type="number" step="0.01" id="weight" placeholder="Gewicht" required>
+            <input type="number" step="0.001" id="weight" placeholder="Gewicht" required>
 
             <label for="reps">Wiederholungen:</label>
-            <input type="number" step="0.01" id="reps" placeholder="Wiederholungen" required>
+            <input type="number" step="0.001" id="reps" placeholder="Wiederholungen" required>
 
             <label for="notes">Notizen (optional):</label>
             <textarea id="notes" rows="4" placeholder="Anmerkungen zur Übung"></textarea>
 
             <button type="submit">Übung hinzufügen</button>
         </form>
+        <button id="deleteLastSetBtn">Letzten Satz löschen</button>
         <button id="endSessionBtn">Session Beenden</button>
     </div>
 
@@ -202,6 +203,23 @@
                     listItem.textContent = `Satz ${index + 1}: ${setData}`;
                     historyList.appendChild(listItem);
                 });
+            }
+        }
+
+        // Handle "delete last set" button click
+        document.getElementById('deleteLastSetBtn').addEventListener('click', () => {
+            deleteLastSet();
+        });
+
+        // Function to delete the last set
+        function deleteLastSet() {
+            const lastExercise = Object.keys(exercisesCompleted).pop(); // Get the last added exercise
+            if (lastExercise && exercisesCompleted[lastExercise].length > 0) {
+                exercisesCompleted[lastExercise].pop(); // Remove the last set
+                if (exercisesCompleted[lastExercise].length === 0) {
+                    delete exercisesCompleted[lastExercise]; // Remove exercise if no sets are left
+                }
+                updateHistoryList(); // Update the displayed history
             }
         }
 
